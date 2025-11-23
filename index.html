@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>RaihanAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto+Mono&family=Permanent+Marker&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="index.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/genai": "https://esm.sh/@google/genai@^1.4.0",
+          "react/": "https://aistudiocdn.com/react@^19.1.1/",
+          "react": "https://aistudiocdn.com/react@^19.1.1",
+          "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+          "framer-motion": "https://aistudiocdn.com/framer-motion@^11.3.12"
+        }
+      }
+    </script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body class="bg-[#1E1F20] font-['Inter'] text-gray-300 antialiased">
+    <div
+      class="min-h-screen flex items-center justify-center p-4"
+      role="main"
+    >
+      <div
+        class="bg-[#2a2b2e] px-8 pt-8 pb-6 rounded-2xl shadow-2xl w-full max-w-2xl space-y-6"
+      >
+        <div class="text-center">
+          <div class="flex items-center justify-center gap-3 mb-2 select-none">
+            <svg class="h-10 w-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#60A5FA" />
+                  <stop offset="50%" style="stop-color:#A855F7" />
+                  <stop offset="100%" style="stop-color:#EC4899" />
+                </linearGradient>
+              </defs>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" stroke="url(#logo-gradient)" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 tracking-tighter drop-shadow-sm">
+              RaihanAI
+            </h1>
+          </div>
+          <p class="text-gray-400 mt-2 text-sm">
+            Enter a prompt to generate an image with RaihanAI.<br />
+            See the "Code" tab for an example implementation.
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label for="image-size-select" class="block text-sm font-medium text-gray-400 mb-1">Image Size</label>
+            <select
+              id="image-size-select"
+              class="w-full bg-[#353739] border border-gray-600 rounded-lg p-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200"
+              aria-label="Select image size"
+            >
+              <option value="1K">1K (1024x1024)</option>
+              <option value="2K">2K (2048x2048)</option>
+              <option value="4K">4K (4096x4096)</option>
+            </select>
+          </div>
+          <div>
+            <label for="aspect-ratio-select" class="block text-sm font-medium text-gray-400 mb-1">Aspect Ratio</label>
+            <select
+              id="aspect-ratio-select"
+              class="w-full bg-[#353739] border border-gray-600 rounded-lg p-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200"
+              aria-label="Select aspect ratio"
+            >
+              <option value="1:1">1:1 (Square)</option>
+              <option value="16:9">16:9 (Landscape)</option>
+              <option value="9:16">9:16 (Portrait)</option>
+              <option value="4:3">4:3 (Classic Landscape)</option>
+              <option value="3:4">3:4 (Classic Portrait)</option>
+            </select>
+          </div>
+          <textarea
+            id="prompt-input"
+            rows="4"
+            class="w-full bg-[#353739] border border-gray-600 rounded-lg p-4 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 resize-none"
+            placeholder="Enter a prompt, e.g., 'A cinematic shot of a futuristic city at night'"
+            aria-label="Image generation prompt"
+          ></textarea>
+        </div>
+
+        <button
+          id="generate-button"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-400 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        >
+          Generate
+        </button>
+
+        <div class="w-full space-y-4">
+          <img
+            id="output-image"
+            alt="Generated image"
+            class="w-full rounded-lg hidden"
+          />
+          <button
+            id="download-button"
+            class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none hidden"
+            aria-label="Download generated image"
+          >
+            Download Image
+          </button>
+          <!-- Loading spinner -->
+          <div
+            id="loading-spinner"
+            class="hidden animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-blue-500 border-gray-700 mx-auto"
+            role="status"
+            aria-label="Loading"
+          >
+            <span class="sr-only">Loading...</span>
+          </div>
+        </div>
+
+        <p id="status" class="text-center text-gray-400 min-h-[24px]"></p>
+
+        <!-- API Key Configuration Section -->
+        <div id="api-key-section" class="space-y-4 bg-[#2f3133] p-4 rounded-lg mt-6">
+          <h2 class="text-xl font-bold text-white mb-2">API Key Configuration</h2>
+          <div>
+            <input
+              type="checkbox"
+              id="use-custom-api-key"
+              class="mr-2 accent-blue-600"
+              aria-label="Use my own API Key"
+            />
+            <label for="use-custom-api-key" class="text-sm font-medium text-gray-300"
+              >Use my own API Key</label
+            >
+          </div>
+          <div>
+            <label for="api-key-input" class="block text-sm font-medium text-gray-400 mb-1"
+              >Your Custom API Key (Optional)</label
+            >
+            <input
+              type="text"
+              id="api-key-input"
+              placeholder="Paste your Gemini API key here"
+              class="w-full bg-[#353739] border border-gray-600 rounded-lg p-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200 disabled:bg-gray-700 disabled:border-gray-700 disabled:cursor-not-allowed"
+              aria-label="Custom API Key Input"
+              disabled
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              <a
+                id="billing-link"
+                href="https://ai.google.dev/gemini-api/docs/billing"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-blue-400 hover:underline"
+                >Get your API key from Google AI Studio</a
+              >
+              and check billing details.
+            </p>
+          </div>
+        </div>
+
+        <div id="image-history-section" class="w-full space-y-4 pt-6" style="display: none;">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-white">Image History</h2>
+            <button
+              id="clear-history-button"
+              class="text-sm text-red-400 hover:text-red-300 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Clear all image history"
+            >
+              Clear History
+            </button>
+          </div>
+          <div id="image-history-container" class="space-y-3">
+            <!-- History items will be dynamically added here by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="index.tsx"></script>
+
+    <div id="banner-root"></div>
+    <script type="text/babel" data-type="module">
+      import React, { useState, useEffect } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import { motion, AnimatePresence } from 'framer-motion';
+
+      const REMIX_IDEAS = [
+        "to generate a movie poster.",
+        "to visualize a product placement.",
+        "to reimagine your character designs.",
+        "to create new scenes",
+        "to preview different camera shots.",
+      ];
+
+      const CloseIcon = () => (
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      );
+
+      const Banner = () => {
+          const [isVisible, setIsVisible] = useState(true);
+          const [index, setIndex] = useState(0);
+
+          useEffect(() => {
+              const intervalId = setInterval(() => {
+                  setIndex(prevIndex => (prevIndex + 1) % REMIX_IDEAS.length);
+              }, 3500);
+
+              return () => clearInterval(intervalId);
+          }, []);
+
+          const handleSelectKeyClick = async (e) => {
+            e.preventDefault();
+            if (window.aistudio?.openSelectKey) {
+              await window.aistudio.openSelectKey();
+            } else {
+              console.log('window.aistudio.openSelectKey() not available.');
+              alert('API key selection is not available in this environment.');
+            }
+          };
+          
+          if (!isVisible) {
+            return null;
+          }
+
+          return (
+              <header className="app-banner">
+                  <div className="app-banner-content">
+                      <div className="banner-left">
+                          <p>Powered by the Gemini API</p>
+                      </div>
+                      <div className="remix-ideas">
+                          <span className="remix-prompt">Remix this app...</span>
+                          <div className="remix-text-container">
+                              <AnimatePresence mode="wait">
+                                  <motion.span
+                                      key={index}
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0, y: -10 }}
+                                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                                      className="remix-text"
+                                  >
+                                      {REMIX_IDEAS[index]}
+                                  </motion.span>
+                              </AnimatePresence>
+                          </div>
+                      </div>
+                      <div className="banner-right">
+                          <div className="banner-buttons">
+                              <a
+                                  href="https://aistudio.google.com/apps"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="banner-button button-gemini-chat"
+                              >
+                                  Apps on AI Studio
+                              </a>
+                              <a
+                                  href="#"
+                                  onClick={handleSelectKeyClick}
+                                  className="banner-button button-ai-studio"
+                              >
+                                  Add your API Key
+                              </a>
+                          </div>
+                          <button
+                            className="close-button"
+                            onClick={() => setIsVisible(false)}
+                            aria-label="Close notice">
+                            <CloseIcon />
+                          </button>
+                      </div>
+                  </div>
+              </header>
+          );
+      };
+
+      const container = document.getElementById('banner-root');
+      if (container) {
+        const root = createRoot(container);
+        root.render(<React.StrictMode><Banner /></React.StrictMode>);
+      }
+    </script>
+  </body>
+</html>
